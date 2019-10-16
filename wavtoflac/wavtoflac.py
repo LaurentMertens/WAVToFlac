@@ -42,18 +42,18 @@ class WAVToFlac:
         if b_initial:
             self.failed = []
 
-        # Get file extension, if applicable (i.e., we're not dealing with a directory)
-        ext = path.rsplit('.', 1)
-        if len(ext) == 2:
-            ext = ext[1]
-        else:
-            ext = ''
-
         for elem in os.listdir(path):
             full_path_in = os.path.join(path, elem)
+            # Get file extension, if applicable (i.e., we're not dealing with a directory)
+            ext = elem.rsplit('.', 1)
+            if len(ext) == 2:
+                ext = ext[1]
+            else:
+                ext = ''
+
             if os.path.isdir(full_path_in):
-                self.parse_dir_convert(full_path_in, ref_path, b_initial=False)
-            elif full_path_in.endswith(".wav"):
+                self.parse_dir_convert(full_path_in, ref_path, to_copy, b_initial=False)
+            elif ext == "wav":
                 full_dir_out = os.path.dirname(full_path_in).replace(PATH_IN, PATH_OUT)
                 if not os.path.exists(full_dir_out):
                     os.makedirs(full_dir_out)
@@ -268,5 +268,5 @@ class WAVToFlac:
 
 if __name__ == '__main__':
     w2f = WAVToFlac()
-    # w2f.parse_dir_convert(PATH_IN, PATH_IN, to_copy={'mp3', 'flac'})
-    w2f.parse_dir_update_tags(PATH_OUT, ref_path=PATH_OUT)
+    w2f.parse_dir_convert(PATH_IN, PATH_IN, to_copy={'mp3', 'flac'})
+    # w2f.parse_dir_update_tags(PATH_OUT, ref_path=PATH_OUT)
