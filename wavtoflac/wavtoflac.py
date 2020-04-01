@@ -13,8 +13,9 @@ PATH_OUT = os.path.join(HOME, "../../media/lmertens/SD_CARD/MUSIC")
 
 
 class Format(Enum):
-    WAV = '.wav'
     FLAC = '.flac'
+    MP3 = '.mp3'
+    WAV = '.wav'
 
 
 class WAVToFlac:
