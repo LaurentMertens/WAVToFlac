@@ -26,7 +26,7 @@ class WAVToFlac:
         """
 
         :param path: the path to parse
-        :param ref_path: this is the path you will first call the method will. After the initial call, the method
+        :param ref_path: this is the path you will first call the method with. After the initial call, the method
         will recursively traverse subpaths, and use this 'original' path to extract the names of the directories
         specific to the music being parsed. If this doesn't make any sense, read the code.
         :param to_copy: an optional set of file extensions that should be copied from PATH_IN to PATH_OUT.
@@ -269,5 +269,5 @@ class WAVToFlac:
 
 if __name__ == '__main__':
     w2f = WAVToFlac()
-    w2f.parse_dir_convert(PATH_IN, PATH_IN, to_copy={'mp3', 'flac'})
+    w2f.parse_dir_convert(PATH_IN, PATH_IN, to_copy={'mp3', 'flac', 'jpg', 'jpeg', 'png'})
     # w2f.parse_dir_update_tags(PATH_OUT, ref_path=PATH_OUT)
