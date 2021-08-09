@@ -1,7 +1,7 @@
 """
 Convert files in flac to wav, following same directory structure.
 
-.. codeauthor:: Laurent Mertens <laurent.mertens@kuleuven.be>
+.. codeauthor:: Laurent Mertens <laurent.mertens@outlook.com>
 """
 import os
 import shutil
@@ -14,7 +14,7 @@ from termcolor import cprint
 # Defaults
 HOME = os.path.expanduser("~")
 PATH_IN = os.path.join(HOME, "../../media/lmertens/SD_CARD/MUSIC")
-PATH_OUT = os.path.join(HOME, "../../media/lmertens/MusicMorryII/Music")
+PATH_OUT = os.path.join(HOME, "../../media/lmertens/MusicMorryIII/Music")
 
 
 class Format(Enum):

@@ -8,7 +8,7 @@ from termcolor import cprint
 
 # Defaults
 HOME = os.path.expanduser("~")
-PATH_IN = os.path.join(HOME, "../../media/lmertens/MusicMorryII/Music")
+PATH_IN = os.path.join(HOME, "../../media/lmertens/MusicMorryIII/Music")
 PATH_OUT = os.path.join(HOME, "../../media/lmertens/SD_CARD/MUSIC")
 
 
