@@ -21,16 +21,18 @@ class Format(Enum):
 class WAVToFlac:
     def __init__(self):
         self.failed = []
+        # ref_path: this is the path you will first call the method with. After the initial call, the method
+        # will recursively traverse subpaths, and use this 'original' path to extract the names of the directories
+        # specific to the music being parsed. If this doesn't make any sense, read the code.
+        self.ref_path = None
 
-    def parse_dir_convert(self, path, ref_path, to_copy=None, b_initial=True):
+    def parse_dir_convert(self, path_in, path_out, to_copy=None, _b_initial=True):
         """
 
-        :param path: the path to parse
-        :param ref_path: this is the path you will first call the method with. After the initial call, the method
-        will recursively traverse subpaths, and use this 'original' path to extract the names of the directories
-        specific to the music being parsed. If this doesn't make any sense, read the code.
+        :param path_in: the path to parse
+        :param path_out: the output path in which the folder structure found within path_in will be mirrored.
         :param to_copy: an optional set of file extensions that should be copied from PATH_IN to PATH_OUT.
-        :param b_initial: boolean indicating that this call did not originate from within the method itself. Should
+        :param _b_initial: boolean indicating that this call did not originate from within the method itself. Should
         not be specified by the user.
         :return:
         """
@@ -40,11 +42,12 @@ class WAVToFlac:
             raise ValueError(f"Argument 'to_copy' should be of type 'set', got '{to_copy.__class__.__name__}' instead.")
 
         # Reset container for failed files
-        if b_initial:
+        if _b_initial:
             self.failed = []
+            self.ref_path = path_in
 
-        for elem in os.listdir(path):
-            full_path_in = os.path.join(path, elem)
+        for elem in os.listdir(path_in):
+            full_path_in = os.path.join(path_in, elem)
             # Get file extension, if applicable (i.e., we're not dealing with a directory)
             ext = elem.rsplit('.', 1)
             if len(ext) == 2:
@@ -53,16 +56,16 @@ class WAVToFlac:
                 ext = ''
 
             if os.path.isdir(full_path_in):
-                self.parse_dir_convert(full_path_in, ref_path, to_copy, b_initial=False)
+                self.parse_dir_convert(full_path_in, path_out, to_copy, _b_initial=False)
             elif ext == "wav":
-                full_dir_out = os.path.dirname(full_path_in).replace(PATH_IN, PATH_OUT)
+                full_dir_out = os.path.dirname(full_path_in).replace(self.ref_path, path_out)
                 if not os.path.exists(full_dir_out):
                     os.makedirs(full_dir_out)
                 full_path_out = os.path.join(full_dir_out, elem).replace('.wav', '.flac')
                 if os.path.isfile(full_path_out):
                     continue
 
-                tags = self._extract_tags(full_path_in, ref_path, audio_format=Format.WAV)
+                tags = self._extract_tags(full_path_in, audio_format=Format.WAV)
 
                 print(f"Converting '{elem}' to\n\t[{full_path_out}]")
 
@@ -81,7 +84,7 @@ class WAVToFlac:
                 # audio_file.convert(full_path_out, audiotools.FlacAudio)
             # Is this a file that should be copied?
             elif ext in to_copy:
-                full_dir_out = os.path.dirname(full_path_in).replace(PATH_IN, PATH_OUT)
+                full_dir_out = os.path.dirname(full_path_in).replace(self.ref_path, path_out)
                 if not os.path.exists(full_dir_out):
                     os.makedirs(full_dir_out)
                 full_path_out = os.path.join(full_dir_out, elem)
@@ -90,7 +93,7 @@ class WAVToFlac:
                 print(f"Copying [{full_path_in}] to\n\t[{full_path_out}]")
                 shutil.copyfile(full_path_in, full_path_out)
 
-        if b_initial:
+        if _b_initial:
             print()
             if not self.failed:
                 print("All files converted successfully.")
@@ -98,17 +101,17 @@ class WAVToFlac:
                 for e in self.failed:
                     print(f"Failed to process: [{e}]")
 
-    def parse_dir_update_tags(self, path, ref_path, b_initial=True):
+    def _parse_dir_update_tags(self, path, _b_initial=True):
         # Reset container for failed files
-        if path == ref_path:
+        if path == self.ref_path:
             self.failed = []
 
         for elem in os.listdir(path):
             full_path_in = os.path.join(path, elem)
             if os.path.isdir(full_path_in):
-                self.parse_dir_update_tags(full_path_in, ref_path, b_initial=False)
+                self._parse_dir_update_tags(full_path_in, _b_initial=False)
             elif full_path_in.endswith(".flac"):
-                tags = self._extract_tags(full_path_in, ref_path)
+                tags = self._extract_tags(full_path_in, self.ref_path)
 
                 try:
                     song = FLAC(full_path_in)
@@ -120,7 +123,7 @@ class WAVToFlac:
                     print(e)
                     self.failed.append(full_path_in)
 
-        if b_initial:
+        if _b_initial:
             print()
             if not self.failed:
                 print("All files converted successfully.")
@@ -128,8 +131,7 @@ class WAVToFlac:
                 for e in self.failed:
                     print(f"Failed to process: [{e}]")
 
-    @classmethod
-    def _extract_tags(cls, path: str, ref_path: str, audio_format: Format = Format.FLAC):
+    def _extract_tags(self, path: str, audio_format: Format = Format.FLAC):
         """
         Extract tags from path and filename
 
@@ -143,7 +145,6 @@ class WAVToFlac:
         "Author/Book/Disc x/
 
         :param path: the path to parse
-        :param ref_path: the reference path (=root path of the collection)
         :param audio_format: file format
         :return:
         """
@@ -154,7 +155,7 @@ class WAVToFlac:
         tags['totaltracks'] = str(nb_tracks)
 
         elem = path[path.rfind('/')+1:]
-        album_dir = os.path.dirname(path).replace(ref_path, '')[1:]  # Only the 'artist - album/disc' part
+        album_dir = os.path.dirname(path).replace(self.ref_path, '')[1:]  # Only the 'artist - album/disc' part
         len_dir = len(album_dir.split('/'))
 
         # Parse directory/ies
@@ -188,7 +189,7 @@ class WAVToFlac:
                 tags['album'] = dir_parts[2]
                 tags['date'] = dir_parts[1][1:-1]
 
-            disc_nr = cls._extract_discnr(disc_dir)
+            disc_nr = self._extract_discnr(disc_dir)
             if disc_nr:
                 tags['discnumber'] = disc_nr
 
@@ -208,7 +209,7 @@ class WAVToFlac:
             tags['artist'] = author_dir
             tags['album'] = book_dir
 
-            disc_nr = cls._extract_discnr(disc_dir)
+            disc_nr = self._extract_discnr(disc_dir)
             if disc_nr:
                 tags['discnumber'] = disc_nr
 
@@ -269,5 +270,5 @@ class WAVToFlac:
 
 if __name__ == '__main__':
     w2f = WAVToFlac()
-    w2f.parse_dir_convert(PATH_IN, PATH_IN, to_copy={'mp3', 'flac', 'jpg', 'jpeg', 'png'})
+    w2f.parse_dir_convert(path_in=PATH_IN, path_out=PATH_OUT, to_copy={'mp3', 'flac', 'jpg', 'jpeg', 'png'})
     # w2f.parse_dir_update_tags(PATH_OUT, ref_path=PATH_OUT)
