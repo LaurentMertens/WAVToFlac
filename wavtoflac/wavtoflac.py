@@ -9,7 +9,8 @@ from termcolor import cprint
 # Defaults
 HOME = os.path.expanduser("~")
 PATH_IN = os.path.join(HOME, "../../media/lmertens/MusicMorryIII/Music")
-PATH_OUT = os.path.join(HOME, "../../media/lmertens/SD_CARD/MUSIC")
+# PATH_OUT = os.path.join(HOME, "../../media/lmertens/SD_CARD/MUSIC")
+PATH_OUT = os.path.join(HOME, "../../media/lmertens/3039-3962/MUSIC")
 
 
 class Format(Enum):
@@ -25,6 +26,25 @@ class WAVToFlac:
         # will recursively traverse subpaths, and use this 'original' path to extract the names of the directories
         # specific to the music being parsed. If this doesn't make any sense, read the code.
         self.ref_path = None
+
+    def check_dirs_out_to_in(self, path_in, path_out, b_delete=False):
+        """
+        Check which directories present on target device (or path) are NOT present on source device (or path).
+
+        :param path_in: the path to parse.
+        :param path_out: the output path in which the folder structure found within path_in will be mirrored.
+        :param b_delete: delete path on target device if it does not exist on source device.
+        :return:
+        """
+        for elem in sorted(os.listdir(path_out)):
+            full_path_target = os.path.join(path_out, elem)
+            if os.path.isdir(full_path_target):
+                full_path_source = os.path.join(path_in, elem)
+                if not os.path.exists(full_path_source):
+                    print(f"Unmatched target path: {elem}")
+                    if b_delete:
+                        shutil.rmtree(full_path_target)
+                        print("\tPath deleted from target device.")
 
     def parse_dir_convert(self, path_in, path_out, to_copy=None, _b_initial=True):
         """
@@ -59,9 +79,12 @@ class WAVToFlac:
                 self.parse_dir_convert(full_path_in, path_out, to_copy, _b_initial=False)
             elif ext == "wav":
                 full_dir_out = os.path.dirname(full_path_in).replace(self.ref_path, path_out)
+                # if 'Rammstein' not in full_dir_out and 'Bram De Looze' not in full_dir_out:
+                #     continue
                 if not os.path.exists(full_dir_out):
                     os.makedirs(full_dir_out)
                 full_path_out = os.path.join(full_dir_out, elem).replace('.wav', '.flac')
+                # File already exists? Then skip.
                 if os.path.isfile(full_path_out):
                     continue
 
@@ -270,5 +293,6 @@ class WAVToFlac:
 
 if __name__ == '__main__':
     w2f = WAVToFlac()
+    w2f.check_dirs_out_to_in(path_out=PATH_OUT, path_in=PATH_IN, b_delete=False)
     w2f.parse_dir_convert(path_in=PATH_IN, path_out=PATH_OUT, to_copy={'mp3', 'flac', 'jpg', 'jpeg', 'png'})
     # w2f.parse_dir_update_tags(PATH_OUT, ref_path=PATH_OUT)
