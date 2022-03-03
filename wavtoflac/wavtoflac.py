@@ -14,6 +14,7 @@ PATH_OUT = os.path.join(HOME, "../../media/lmertens/3039-3962/MUSIC")
 
 
 class Format(Enum):
+    AAC = '.aac'
     FLAC = '.flac'
     MP3 = '.mp3'
     WAV = '.wav'
@@ -195,26 +196,36 @@ class WAVToFlac:
             # else:
             #     raise ValueError(f"Don't know what to do here!\n{path}")
         elif len_dir == 2:
-            # Get number of discs
-            root_album_dir = path.rsplit('/', 2)[0]  # Full path to 'artist - album' part, without the 'disc' folder
+            root_album_dir = path.rsplit('/', 2)[0]  # Full path to 'artist - album' part
+            album_dir_parts = album_dir.split('/')
+            root_dir, disc_dir = album_dir_parts[0], album_dir_parts[1]
+            # Get number of discs/collections
             nb_discs = len([x for x in os.listdir(root_album_dir) if os.path.isdir(os.path.join(root_album_dir, x))])
             tags['totaldiscs'] = str(nb_discs)
 
-            album_dir_parts = album_dir.split('/')
-            root_dir, disc_dir = album_dir_parts[0], album_dir_parts[1]
-
             dir_parts = [x.strip() for x in root_dir.split(' - ', 2)]
 
-            tags['artist'] = dir_parts[0]
-            if len(dir_parts) == 2:
-                tags['album'] = dir_parts[1]
-            elif len(dir_parts) == 3:
-                tags['album'] = dir_parts[2]
-                tags['date'] = dir_parts[1][1:-1]
+            # Situation of one album composed of multiple discs, with folders ending with "Disc X" or "CD X"
+            if "disc " in disc_dir.lower() or "cd " in disc_dir.lower():
+                tags['artist'] = dir_parts[0]
+                if len(dir_parts) == 2:
+                    tags['album'] = dir_parts[1]
+                elif len(dir_parts) == 3:
+                    tags['album'] = dir_parts[2]
+                    tags['date'] = dir_parts[1][1:-1]
 
-            disc_nr = self._extract_discnr(disc_dir)
-            if disc_nr:
-                tags['discnumber'] = disc_nr
+                disc_nr = self._extract_discnr(disc_dir)
+                if disc_nr:
+                    tags['discnumber'] = disc_nr
+
+            # Situation of one album composed of multiple discs, with each subfolder not ending with "Disc"/"CD"
+            else:
+                tags['artist'] = dir_parts[0]
+                if len(dir_parts) == 2:
+                    tags['album'] = f'{dir_parts[1]} - {disc_dir}'
+                elif len(dir_parts) == 3:
+                    tags['album'] = f'{dir_parts[2]} - {disc_dir}'
+                    tags['date'] = dir_parts[1][1:-1]
 
             # else:
             #     raise ValueError(f"DiscDir: Don't know what to do here!\n{path}\n{album_dir}\n{disc_dir}")
@@ -294,5 +305,5 @@ class WAVToFlac:
 if __name__ == '__main__':
     w2f = WAVToFlac()
     w2f.check_dirs_out_to_in(path_out=PATH_OUT, path_in=PATH_IN, b_delete=False)
-    w2f.parse_dir_convert(path_in=PATH_IN, path_out=PATH_OUT, to_copy={'mp3', 'flac', 'jpg', 'jpeg', 'png'})
+    w2f.parse_dir_convert(path_in=PATH_IN, path_out=PATH_OUT, to_copy={'mp3', 'flac', 'jpg', 'jpeg', 'png', 'aac'})
     # w2f.parse_dir_update_tags(PATH_OUT, ref_path=PATH_OUT)
