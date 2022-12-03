@@ -30,7 +30,7 @@ class WAVToFlac:
 
     def check_dirs_out_to_in(self, path_in, path_out, b_delete=False):
         """
-        Check which directories present on target device (or path) are NOT present on source device (or path).
+        Check which directories present on target device or path (path_out) are NOT present on source device or path (path_in).
 
         :param path_in: the path to parse.
         :param path_out: the output path in which the folder structure found within path_in will be mirrored.
@@ -43,9 +43,12 @@ class WAVToFlac:
                 full_path_source = os.path.join(path_in, elem)
                 if not os.path.exists(full_path_source):
                     print(f"Unmatched target path: {elem}")
+                    # print(f"\tFull path: {full_path_target}")
                     if b_delete:
                         shutil.rmtree(full_path_target)
                         print("\tPath deleted from target device.")
+                else:
+                    self.check_dirs_out_to_in(path_in=full_path_source, path_out=full_path_target, b_delete=b_delete)
 
     def parse_dir_convert(self, path_in, path_out, to_copy=None, _b_initial=True):
         """
@@ -72,7 +75,7 @@ class WAVToFlac:
             # Get file extension, if applicable (i.e., we're not dealing with a directory)
             ext = elem.rsplit('.', 1)
             if len(ext) == 2:
-                ext = ext[1]
+                ext = ext[1].lower()
             else:
                 ext = ''
 
@@ -80,11 +83,11 @@ class WAVToFlac:
                 self.parse_dir_convert(full_path_in, path_out, to_copy, _b_initial=False)
             elif ext == "wav":
                 full_dir_out = os.path.dirname(full_path_in).replace(self.ref_path, path_out)
-                # if 'Rammstein' not in full_dir_out and 'Bram De Looze' not in full_dir_out:
-                #     continue
                 if not os.path.exists(full_dir_out):
                     os.makedirs(full_dir_out)
-                full_path_out = os.path.join(full_dir_out, elem).replace('.wav', '.flac')
+                # Don't do ".replace('.wav', '.flac'), because that way you miss the cases
+                # where the original file has '.WAV' in uppercase.
+                full_path_out = os.path.join(full_dir_out, elem)[:-4] + '.flac'
                 # File already exists? Then skip.
                 if os.path.isfile(full_path_out):
                     continue
@@ -163,7 +166,7 @@ class WAVToFlac:
         "Artist - Album/" or "Artist - (year) - Album/"
         Albums that span multible discs are supposed to be in the following format:
         "Artist - Album/Disc x/" or "Artist - (year) - Album/Disc x/",
-        with a "disc x" directory fo each disc, where 'x' should be replaced by the index of the disc.
+        with a "disc x" directory for each disc, where 'x' should be replaced by the index of the disc.
 
         Audiobook should follow the following format:
         "Author/Book/Disc x/
@@ -304,6 +307,5 @@ class WAVToFlac:
 
 if __name__ == '__main__':
     w2f = WAVToFlac()
-    w2f.check_dirs_out_to_in(path_out=PATH_OUT, path_in=PATH_IN, b_delete=False)
-    w2f.parse_dir_convert(path_in=PATH_IN, path_out=PATH_OUT, to_copy={'mp3', 'flac', 'jpg', 'jpeg', 'png', 'aac'})
-    # w2f.parse_dir_update_tags(PATH_OUT, ref_path=PATH_OUT)
+    w2f.check_dirs_out_to_in(path_out=PATH_OUT, path_in=PATH_IN, b_delete=True)
+    w2f.parse_dir_convert(path_in=PATH_IN, path_out=PATH_OUT, to_copy={'mp3', 'mp4', 'flac', 'jpg', 'jpeg', 'png', 'aac', 'pdf'})
